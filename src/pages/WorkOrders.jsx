@@ -254,6 +254,9 @@ function CreateOverlay({ form, set, data, busy, submitCreate, createFiles, setCr
 
 function DetailOverlay({ o, me, employees, storeName, busy, act, lineProfile, onClose }) {
   const [accepting, setAccepting] = useState(false)
+  const [rejecting, setRejecting] = useState(false)   // 已完成關:申請人駁回打回重做
+  const [rejReason, setRejReason] = useState('')
+  const [rejFiles, setRejFiles] = useState([])
   const [atts, setAtts] = useState([])
   useEffect(() => {
     supabase.rpc('liff_get_work_order', { p_line_user_id: lineProfile.lineUserId, p_id: o.id })
@@ -267,6 +270,20 @@ function DetailOverlay({ o, me, employees, storeName, busy, act, lineProfile, on
 
   const doReject = () => { const r = window.prompt('退回原因：'); if (r === null) return; act('liff_reject_work_order', { p_id: o.id, p_reason: r }, '已退回') }
   const doAccept = () => { if (!aForm.scheduled_due_date) return alert('請填排定完成日'); act('liff_accept_work_order', { p_id: o.id, p_assignee_id: aForm.assignee_id ? Number(aForm.assignee_id) : null, p_scheduled_due_date: aForm.scheduled_due_date }, '已受理') }
+  // 已完成關:申請人駁回結案 → 打回「處理中」交回承辦人重做(可打字 + 附圖片/檔案)
+  const doReopen = async () => {
+    if (!rejReason.trim() && rejFiles.length === 0) return alert('請填駁回原因,或附上圖片說明')
+    for (const file of rejFiles) {   // 先傳附件(狀態還在已完成)
+      const ext = (file.name.split('.').pop() || 'bin').toLowerCase()
+      const path = `work-orders/emp-${me?.id || 'x'}/${o.id}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`
+      const { error: upErr } = await supabase.storage.from('attachments').upload(path, file, { upsert: true })
+      if (!upErr) await supabase.rpc('liff_add_work_order_attachment', {
+        p_line_user_id: lineProfile.lineUserId, p_id: o.id, p_storage_path: path,
+        p_file_name: file.name, p_file_size: file.size, p_mime_type: file.type,
+      })
+    }
+    act('liff_reopen_work_order', { p_id: o.id, p_reason: rejReason.trim() }, '已駁回,退回承辦人重做')
+  }
 
   const Row = ({ label, children }) => (
     <div style={{ display: 'flex', gap: 10, padding: '7px 0', borderBottom: '1px solid var(--border)' }}>
@@ -345,9 +362,30 @@ function DetailOverlay({ o, me, employees, storeName, busy, act, lineProfile, on
             </div>
           )
         )}
-        {/* 已完成：申請人確認結案 */}
+        {/* 已完成：申請人確認結案 / 駁回(打回重做) */}
         {o.status === '已完成' && isRequester && (
-          <button disabled={busy} onClick={() => act('liff_confirm_work_order', { p_id: o.id }, '已結案')} style={{ ...btn('var(--green)'), width: '100%' }}><CheckCircle2 size={14} style={{ verticalAlign: -2 }} /> 確認結案</button>
+          rejecting ? (
+            <div style={{ padding: 12, borderRadius: 10, background: 'var(--card)', border: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--red)' }}>駁回工單（退回承辦人重做）</div>
+              <textarea style={{ ...inputStyle, minHeight: 72, resize: 'vertical' }}
+                placeholder="駁回原因：哪裡沒做好、要怎麼修…（可只放圖片）"
+                value={rejReason} onChange={e => setRejReason(e.target.value)} />
+              <div>
+                <label style={labelStyle}>附圖片 / 檔案（選填,可拍照）</label>
+                <input type="file" multiple accept={WO_ATTACH_ACCEPT} onChange={e => setRejFiles(Array.from(e.target.files || []))} style={{ fontSize: 12 }} />
+                {rejFiles.map((f, i) => <div key={i} style={{ fontSize: 12, color: 'var(--t2)', marginTop: 3 }}>📎 {f.name}</div>)}
+              </div>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button disabled={busy} onClick={doReopen} style={btn('var(--red)')}>{busy ? '送出中…' : '送出駁回'}</button>
+                <button onClick={() => { setRejecting(false); setRejReason(''); setRejFiles([]) }} style={{ ...btn('var(--card)'), color: 'var(--t2)', border: '1px solid var(--border)' }}>取消</button>
+              </div>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button disabled={busy} onClick={() => act('liff_confirm_work_order', { p_id: o.id }, '已結案')} style={btn('var(--green)')}><CheckCircle2 size={14} style={{ verticalAlign: -2 }} /> 確認結案</button>
+              <button disabled={busy} onClick={() => setRejecting(true)} style={btn('var(--red)')}>駁回</button>
+            </div>
+          )
         )}
       </div>
     </Overlay>

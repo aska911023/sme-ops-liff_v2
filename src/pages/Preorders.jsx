@@ -12,6 +12,7 @@ const emptyForm = () => ({
   items: [emptyItem()],
   need_bag: false, need_invoice: false, invoice_tax_id: '',
   specific_delivery: false, delivery_time: '',
+  shipping_no: '',
   notes: '', status: '未出貨',
 })
 
@@ -44,7 +45,7 @@ export default function Preorders() {
     if (!search.trim()) return true
     const q = search.trim().toLowerCase()
     const inItems = (r.items || []).some(it => (it.name || '').toLowerCase().includes(q))
-    return [r.customer_name, r.phone, r.address].some(f => (f || '').toLowerCase().includes(q)) || inItems
+    return [r.customer_name, r.phone, r.address, r.shipping_no].some(f => (f || '').toLowerCase().includes(q)) || inItems
   }
   const inDateRange = (r) => {
     if (dateFrom && (r.order_date || '') < dateFrom) return false
@@ -71,6 +72,7 @@ export default function Preorders() {
       items: Array.isArray(r.items) && r.items.length ? r.items.map(it => ({ name: it.name || '', qty: it.qty ?? 1 })) : [emptyItem()],
       need_bag: !!r.need_bag, need_invoice: !!r.need_invoice, invoice_tax_id: r.invoice_tax_id || '',
       specific_delivery: !!r.specific_delivery, delivery_time: r.delivery_time || '',
+      shipping_no: r.shipping_no || '',
       notes: r.notes || '', status: r.status || '未出貨',
     })
     setEditingId(r.id); setShowForm(true)
@@ -89,6 +91,7 @@ export default function Preorders() {
       invoice_tax_id: form.need_invoice ? (form.invoice_tax_id || null) : null,
       specific_delivery: form.specific_delivery,
       delivery_time: form.specific_delivery ? (form.delivery_time || null) : null,
+      shipping_no: form.shipping_no?.trim() || null,
       notes: form.notes || null, status: form.status,
     }
     const { data, error } = editingId
@@ -155,6 +158,8 @@ export default function Preorders() {
             {form.specific_delivery && <input className="form-input" placeholder="指定送貨時間(例:週六下午)" value={form.delivery_time} onChange={e => set('delivery_time', e.target.value)} />}
           </div>
 
+          <div className="form-group"><label className="form-label">貨運單號</label><input className="form-input" placeholder="出貨後填(可搜尋)" value={form.shipping_no} onChange={e => set('shipping_no', e.target.value)} /></div>
+
           <div className="form-group"><label className="form-label">其他交待事項</label><textarea className="form-input" rows={3} value={form.notes} onChange={e => set('notes', e.target.value)} /></div>
 
           <button className="btn btn-success" style={{ width: '100%' }} onClick={handleSubmit} disabled={submitting}>{submitting ? '送出中…' : editingId ? '更新' : '送出'}</button>
@@ -182,7 +187,7 @@ export default function Preorders() {
               {pill('未出貨', '未出貨', counts.未出貨, 'badge-orange')}
               {pill('已出貨', '已出貨', counts.已出貨, 'badge-green')}
             </div>
-            <input className="form-input" style={{ marginBottom: 8 }} placeholder="🔍 搜尋姓名 / 電話 / 地址 / 品項" value={search} onChange={e => setSearch(e.target.value)} />
+            <input className="form-input" style={{ marginBottom: 8 }} placeholder="🔍 搜尋姓名 / 電話 / 地址 / 品項 / 貨運單號" value={search} onChange={e => setSearch(e.target.value)} />
             <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginBottom: 8 }}>
               <input className="form-input" type="date" style={{ flex: 1 }} value={dateFrom} onChange={e => setDateFrom(e.target.value)} />
               <span style={{ color: 'var(--t3)' }}>~</span>
@@ -219,6 +224,7 @@ export default function Preorders() {
                   {[r.need_bag && '提袋', r.need_invoice && `統編${r.invoice_tax_id ? ' ' + r.invoice_tax_id : ''}`, r.specific_delivery && `指定時間${r.delivery_time ? ' ' + r.delivery_time : ''}`].filter(Boolean).join('、')}
                 </div>
               )}
+              {r.shipping_no && <div style={{ fontSize: 12, color: 'var(--t2)', marginTop: 4, fontFamily: 'monospace' }}>🚚 {r.shipping_no}</div>}
               {r.notes && <div style={{ fontSize: 12, color: 'var(--t3)', marginTop: 4 }}>📝 {r.notes}</div>}
               <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
                 <button className="btn btn-sm" style={{ flex: 1, background: 'var(--card)', border: '1px solid var(--border2)', color: 'var(--t2)' }} onClick={() => handleEdit(r)}><Pencil size={13} /> 編輯</button>

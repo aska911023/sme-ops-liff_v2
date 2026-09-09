@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { ChevronLeft, Plus, Pencil, Trash2 } from 'lucide-react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../lib/supabase'
 import TimeSelect from '../components/TimeSelect'
@@ -20,10 +20,12 @@ const normType = (t) => (t === '上班打卡' ? 'clock_in' : t === '下班打卡
 export default function ClockCorrection() {
   const { lineProfile } = useAuth()
   const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
   const [records, setRecords] = useState([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState(null)
+  const [resubmitId, setResubmitId] = useState(null)   // 被駁回→編輯重送:走 liff_resubmit_correction
   // clock_corrections 實際欄位：type (clock_in/clock_out，英文) + correction_time + clock_mode
   const [form, setForm] = useState({ date: '', type: 'clock_in', correction_time: '', reason: '', store: '', clock_mode: 'normal' })
   const [stores, setStores] = useState([])
@@ -90,6 +92,8 @@ export default function ClockCorrection() {
     attachFiles.forEach(a => { try { URL.revokeObjectURL(a.preview) } catch {} })
     setAttachFiles([])
     setEditingId(null)
+    setResubmitId(null)
+    if (searchParams.get('resubmit')) setSearchParams({}, { replace: true })
     setShowForm(false)
   }
 
@@ -106,6 +110,20 @@ export default function ClockCorrection() {
     setShowForm(true)
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
+
+  // 被駁回 → 編輯重送:進入編輯模式並標記為重送(送出走 liff_resubmit_correction,整鏈從關0 重跑)
+  const startResubmit = (r) => {
+    handleEdit(r)
+    setResubmitId(r.id)
+  }
+
+  // 從 ApprovalStatus「編輯並重送」跳來(/clock-correction?resubmit=id):自動進編輯模式
+  useEffect(() => {
+    const rid = searchParams.get('resubmit')
+    if (!rid || editingId || records.length === 0) return
+    const target = records.find(r => String(r.id) === String(rid))
+    if (target) startResubmit(target)
+  }, [searchParams, records.length]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleDelete = async (r) => {
     if (!confirm('撤回這張補打卡申請？撤回後可重新申請。')) return
@@ -135,7 +153,14 @@ export default function ClockCorrection() {
       try { attachMeta = await uploadPhotosGetMeta() } catch (e) { console.warn('照片上傳異常:', e) }
     }
 
-    const { data, error } = editingId
+    const isResubmit = editingId && resubmitId && String(resubmitId) === String(editingId)
+    const { data, error } = isResubmit
+      ? await supabase.rpc('liff_resubmit_correction', {
+          p_line_user_id: lineProfile.lineUserId,
+          p_id: editingId,
+          p_payload: { type: form.type, correction_time: form.correction_time, reason: form.reason },
+        })
+      : editingId
       ? await supabase.rpc('liff_update_clock_correction', {
           p_line_user_id: lineProfile.lineUserId,
           p_id: editingId,
@@ -154,14 +179,22 @@ export default function ClockCorrection() {
           },
         })
     if (error) { alert('送出失敗: ' + error.message); setSubmitting(false); return }
+    // 重送 RPC 回 json:ok=false 代表非本人/非被駁回狀態
+    if (isResubmit && data && data.ok === false) {
+      alert(data.error === 'NOT_FOUND_OR_NOT_REJECTED'
+        ? '無法重送:這張申請可能已被處理或狀態已改變,請下拉重新整理。'
+        : '重送失敗:' + (data.error || '未知錯誤'))
+      setSubmitting(false); return
+    }
 
-    // 編輯:新增照片走既有單獨 RPC(已有 id)
+    // 編輯/重送:新增照片走既有單獨 RPC(已有 id)
     if (editingId && attachFiles.length > 0) {
       try { await uploadAttachments(editingId) } catch (e) { console.warn('附件流程異常:', e) }
     }
 
     // ★ 2026-05-08：client-side notifyNewSubmission 已拔除，由主系統 DB trigger 推送
 
+    if (isResubmit) alert('已重新送審,主管會收到通知')
     reload()
     resetForm()
     setSubmitting(false)
@@ -269,7 +302,7 @@ export default function ClockCorrection() {
 
           <div style={{ display: 'flex', gap: 8 }}>
             <button className="btn btn-success" style={{ flex: 3 }} onClick={handleSubmit} disabled={submitting}>
-              {submitting ? '送出中...' : editingId ? '更新申請' : '送出申請'}
+              {submitting ? '送出中...' : resubmitId ? '重新送審' : editingId ? '更新申請' : '送出申請'}
             </button>
             {editingId && (
               <button className="btn" style={{ flex: 1, background: 'var(--card)', border: '1px solid var(--border2)', color: 'var(--t3)' }} onClick={resetForm}>取消</button>
@@ -338,6 +371,14 @@ export default function ClockCorrection() {
               padding: '6px 10px', borderRadius: 8, background: 'var(--red-dim)',
               border: '1px solid rgba(248,113,113,0.15)',
             }}>駁回原因：{r.reject_reason}</div>
+          )}
+          {(r.status === '已退回' || r.status === '已駁回') && (
+            <button onClick={() => startResubmit(r)} style={{
+              marginTop: 8, padding: '8px 14px', borderRadius: 8,
+              border: '1.5px solid var(--orange)', background: 'rgba(251,146,60,0.1)',
+              color: 'var(--orange)', fontSize: 12, fontWeight: 700, cursor: 'pointer',
+              display: 'inline-flex', alignItems: 'center', gap: 6,
+            }}><Pencil size={12} /> 編輯重送</button>
           )}
         </div>
       ))}

@@ -267,7 +267,7 @@ export default function ApprovalStatus() {
               簽核人：{r.approver}
             </div>
           )}
-          {RESUBMIT_STATUSES.includes(r._status) && r._meta.editPath && r._type !== 'expense_requests' && r._type !== 'corrections' && (
+          {RESUBMIT_STATUSES.includes(r._status) && r._meta.editPath && r._type !== 'expense_requests' && (
             <button
               onClick={() => navigate(`${r._meta.editPath}?resubmit=${r.id}`)}
               style={{

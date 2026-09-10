@@ -125,6 +125,13 @@ export default function StoreAudit() {
       p_line_user_id: lineProfile.lineUserId, p_item_id: itemId, p_remark: text,
     })
   }
+  // 多格填寫內容(input_type='multi',存 remark_list jsonb 陣列)
+  const setItemRemarkList = async (itemId, arr) => {
+    patchItem(itemId, { remark_list: arr })
+    await supabase.rpc('liff_update_store_audit_item', {
+      p_line_user_id: lineProfile.lineUserId, p_item_id: itemId, p_remark_list: arr,
+    })
+  }
 
   // ─── 整張單共用照片 ───
   const [photoUploading, setPhotoUploading] = useState(false)
@@ -395,7 +402,8 @@ export default function StoreAudit() {
                   <ItemRow key={item.id} item={item} canEdit={canEdit}
                     maxDeduct={item.input_type === 'bonus' ? 100 : (grp.allot || 0) - (gd - (item.deduct_score || 0))}
                     onDeduct={(v, max) => setDeduct(item, v, max)}
-                    onRemark={(t) => setItemRemark(item.id, t)} />
+                    onRemark={(t) => setItemRemark(item.id, t)}
+                    onRemarkList={(arr) => setItemRemarkList(item.id, arr)} />
                 ))}
                 {/* 加分群組:整組一格說明(有加分才必填) */}
                 {isBonusGroup && (canEdit ? (
@@ -533,7 +541,44 @@ export default function StoreAudit() {
 }
 
 // ─── 評核項目單列（評分制：扣分；加分列往回補分）───
-function ItemRow({ item, canEdit, maxDeduct, onDeduct, onRemark }) {
+// 多格填寫:一格一項抽查內容,可 +新增 / 刪除;存 remark_list(jsonb 字串陣列)
+function MultiRemark({ list, canEdit, onChange }) {
+  const arr = Array.isArray(list) ? list : []
+  if (!canEdit) {
+    const filled = arr.filter(x => (x || '').trim())
+    if (!filled.length) return null
+    return (
+      <div style={{ marginTop: 4, display: 'flex', flexDirection: 'column', gap: 3 }}>
+        {filled.map((x, i) => (
+          <div key={i} style={{ fontSize: 12, color: 'var(--t2)', padding: '6px 8px', background: 'var(--glass)', borderRadius: 6 }}>{i + 1}. {x}</div>
+        ))}
+      </div>
+    )
+  }
+  const display = arr.length ? arr : ['']
+  const commit = (next) => onChange(next.length ? next : [''])
+  return (
+    <div style={{ marginTop: 6, display: 'flex', flexDirection: 'column', gap: 6 }}>
+      {display.map((v, i) => (
+        <div key={i} style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+          <span style={{ fontSize: 11, color: 'var(--t3)', width: 16, textAlign: 'right' }}>{i + 1}.</span>
+          <input value={v || ''}
+            onChange={e => { const n = [...display]; n[i] = e.target.value; onChange(n) }}
+            placeholder={`抽查品項 ${i + 1}（帳面 vs 現場）`}
+            style={{ flex: 1, padding: '6px 10px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--glass)', color: 'var(--t1)', fontSize: 12 }} />
+          {display.length > 1 && (
+            <button type="button" onClick={() => commit(display.filter((_, j) => j !== i))}
+              style={{ width: 26, height: 26, borderRadius: 6, border: '1px solid var(--border)', background: 'var(--glass)', color: '#ef4444', cursor: 'pointer', fontSize: 15, lineHeight: 1, flexShrink: 0 }}>×</button>
+          )}
+        </div>
+      ))}
+      <button type="button" onClick={() => onChange([...display, ''])}
+        style={{ alignSelf: 'flex-start', padding: '6px 14px', borderRadius: 8, border: '1px dashed #22d3ee', background: 'rgba(34,211,238,0.1)', color: '#22d3ee', cursor: 'pointer', fontSize: 12, fontWeight: 700 }}>＋ 新增一格</button>
+    </div>
+  )
+}
+
+function ItemRow({ item, canEdit, maxDeduct, onDeduct, onRemark, onRemarkList }) {
   const isBonus = item.input_type === 'bonus'
   const val = item.deduct_score || 0
   const active = val > 0
@@ -572,6 +617,9 @@ function ItemRow({ item, canEdit, maxDeduct, onDeduct, onRemark }) {
         ) : (
           item.remark && <div style={{ fontSize: 12, color: 'var(--t2)', marginTop: 4, padding: '6px 8px', background: 'var(--glass)', borderRadius: 6 }}>{item.remark}</div>
         )
+      )}
+      {item.input_type === 'multi' && (
+        <MultiRemark list={item.remark_list} canEdit={canEdit} onChange={onRemarkList} />
       )}
     </div>
   )

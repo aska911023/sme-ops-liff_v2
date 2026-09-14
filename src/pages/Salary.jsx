@@ -538,8 +538,8 @@ export default function Salary() {
                     <span style={{ fontSize: 10, padding: '2px 6px', borderRadius: 4, background: 'rgba(245,158,11,0.15)', color: 'var(--orange)' }}>已發布</span>
                   </div>
                   {[
-                    { label: '損益獎金', value: monthBonus.profit_bonus, sign: '+' },
-                    { label: '達標獎金', value: monthBonus.target_bonus, sign: '+' },
+                    { label: '管理獎金', value: monthBonus.mgmt_bonus, sign: '+' },
+                    { label: '業績獎金', value: monthBonus.target_bonus, sign: '+' },
                     { label: '記功獎金', value: monthBonus.merit_bonus, sign: '+' },
                     { label: '前月補發', value: monthBonus.prev_month_supplement, sign: '+' },
                     { label: '稽核扣項', value: monthBonus.audit_deduction, sign: '-', neg: true },

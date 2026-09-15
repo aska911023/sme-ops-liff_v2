@@ -1,7 +1,6 @@
 import { useEffect } from 'react'
 import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from './contexts/AuthContext'
-import { ClipboardList } from 'lucide-react'
 
 // Hub pages
 import HRHub from './pages/HRHub'
@@ -70,32 +69,6 @@ function LiffDeepLinkRedirect() {
     navigate(target, { replace: true })
   }, [])
   return null
-}
-
-function TabBar() {
-  const navigate = useNavigate()
-  const { pathname } = useLocation()
-
-  const tabs = [
-    { path: '/', icon: <ClipboardList size={20} />, label: 'HR', match: ['/', '/clock', '/salary', '/leave', '/leave-balance', '/tasks', '/expenses', '/off-request', '/business-trip', '/leave-of-absence', '/overtime', '/approve', '/task-confirmations', '/clock-correction', '/my-schedule', '/approval-status', '/expense-request', '/dashboard', '/todo', '/documents', '/benefits', '/training', '/performance', '/resignation', '/personnel-transfer', '/store-repair', '/repair-orders', '/renovation-quotes', '/collections'] },
-  ]
-
-  const activeTab = tabs.find(t => t.match.some(m => pathname === m || (m !== '/' && pathname.startsWith(m))))
-
-  return (
-    <div className="tab-bar">
-      {tabs.map(t => (
-        <button
-          key={t.path}
-          className={`tab-item ${activeTab?.path === t.path ? 'active' : ''}`}
-          onClick={() => navigate(t.path)}
-        >
-          {t.icon}
-          {t.label}
-        </button>
-      ))}
-    </div>
-  )
 }
 
 export default function App() {
@@ -226,7 +199,6 @@ export default function App() {
 
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
-      <TabBar />
     </div>
   )
 }

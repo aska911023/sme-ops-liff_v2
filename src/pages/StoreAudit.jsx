@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
-import { ChevronLeft, Check, X, ClipboardCheck, AlertCircle, Edit3, Send, Paperclip, Star } from 'lucide-react'
+import { ChevronLeft, Check, X, ClipboardCheck, AlertCircle, Edit3, Send, Paperclip, Star, RotateCcw, Trash2 } from 'lucide-react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../lib/supabase'
@@ -48,6 +48,7 @@ export default function StoreAudit() {
   const [employees, setEmployees] = useState([])
   const [draftOnDuty, setDraftOnDuty] = useState([])
   const [signingIdx, setSigningIdx] = useState(null)
+  const [canManage, setCanManage] = useState(false)
 
   const load = useCallback(async () => {
     if (!lineProfile?.lineUserId || !id) return
@@ -71,6 +72,13 @@ export default function StoreAudit() {
     if (!lineProfile?.lineUserId) return
     supabase.rpc('liff_list_employees', { p_line_user_id: lineProfile.lineUserId })
       .then(({ data }) => setEmployees(data?.list || []))
+  }, [lineProfile?.lineUserId])
+
+  // 稽核管理權限(可退回重編 / 刪除)
+  useEffect(() => {
+    if (!lineProfile?.lineUserId) return
+    supabase.rpc('liff_has_permission', { p_line_user_id: lineProfile.lineUserId, p_perm_code: 'store_audit.manage' })
+      .then(({ data }) => setCanManage(data === true))
   }, [lineProfile?.lineUserId])
 
   const cats = useMemo(() => buildCats(data?.items || []), [data])
@@ -262,6 +270,30 @@ export default function StoreAudit() {
     if (error || !res?.ok) { alert('失敗：' + (error?.message || res?.error || 'unknown')); return }
     setShowReject(false); setRejectReason('')
     alert('已退回'); load()
+  }
+
+  // ─── 管理權限:退回草稿重編 / 刪除 ───
+  const doReopen = async () => {
+    if (busy) return
+    if (!confirm(`將此稽核單(${a?.status})退回草稿以重新編輯?`)) return
+    setBusy(true)
+    const { data: res, error } = await supabase.rpc('liff_reopen_store_audit', {
+      p_line_user_id: lineProfile.lineUserId, p_id: Number(id),
+    })
+    setBusy(false)
+    if (error || !res?.ok) { alert('退回失敗:' + (error?.message || res?.error || 'unknown')); return }
+    alert('已退回草稿,可重新編輯'); load()
+  }
+  const doDelete = async () => {
+    if (busy) return
+    if (!confirm(`確定刪除稽核單 #${id}(${a?.store_name}・${a?.status})?連同評核項目一併刪除,無法復原。`)) return
+    setBusy(true)
+    const { data: res, error } = await supabase.rpc('liff_delete_store_audit', {
+      p_line_user_id: lineProfile.lineUserId, p_id: Number(id),
+    })
+    setBusy(false)
+    if (error || !res?.ok) { alert('刪除失敗:' + (error?.message || res?.error || 'unknown')); return }
+    alert('已刪除'); navigate(-1)
   }
 
   if (loading) {
@@ -501,6 +533,22 @@ export default function StoreAudit() {
           <button onClick={doApprove} disabled={busy}
             style={{ flex: 2, padding: 12, borderRadius: 10, border: 'none', background: '#22c55e', color: '#fff', fontSize: 14, fontWeight: 700, opacity: busy ? 0.5 : 1 }}>
             <Check size={16} style={{ verticalAlign: 'middle', marginRight: 4 }} />核准
+          </button>
+        </div>
+      )}
+
+      {/* 管理權限:退回草稿重編 / 刪除(store_audit.manage) */}
+      {canManage && !showReject && (
+        <div style={{ padding: '4px 0 24px', display: 'flex', gap: 8 }}>
+          {!isDraft && (
+            <button onClick={doReopen} disabled={busy}
+              style={{ flex: 1, padding: 11, borderRadius: 10, border: '1px solid var(--border)', background: 'transparent', color: 'var(--t2)', fontSize: 13, fontWeight: 700 }}>
+              <RotateCcw size={15} style={{ verticalAlign: 'middle', marginRight: 4 }} />退回草稿重編
+            </button>
+          )}
+          <button onClick={doDelete} disabled={busy}
+            style={{ flex: 1, padding: 11, borderRadius: 10, border: '1px solid #ef4444', background: 'transparent', color: '#ef4444', fontSize: 13, fontWeight: 700 }}>
+            <Trash2 size={15} style={{ verticalAlign: 'middle', marginRight: 4 }} />刪除
           </button>
         </div>
       )}

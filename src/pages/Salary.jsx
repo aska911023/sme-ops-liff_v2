@@ -30,7 +30,8 @@ export default function Salary() {
   const [leaveDeductions, setLeaveDeductions] = useState([])
   const [expenses, setExpenses] = useState([])
   const [payrollRecords, setPayrollRecords] = useState([])
-  const [bonusRecords, setBonusRecords] = useState([])   // 門市業績獎金（已發布）
+  const [bonusRecords, setBonusRecords] = useState([])   // 門市營運獎金（逐月累計·預覽）
+  const [quarterBonuses, setQuarterBonuses] = useState([]) // 季結算（已發放，掛在發放月）
   const [bag, setBag] = useState(null)          // liff_get_my_salary_detail(引擎明細+微調+發布實領)
   const [bagLoading, setBagLoading] = useState(false)
   const [expandAdd, setExpandAdd] = useState(true)  // 加項預設展開
@@ -95,7 +96,7 @@ export default function Salary() {
       setLeaveDeductions((Array.isArray(l.data) ? l.data : []).filter(x => x.status === '已核准'))
       setExpenses(Array.isArray(e.data) ? e.data : [])
       if (p.data?.ok) setPayrollRecords(p.data.records || [])
-      if (b.data?.ok) setBonusRecords(b.data.records || [])
+      if (b.data?.ok) { setBonusRecords(b.data.records || []); setQuarterBonuses(b.data.quarters || []) }
       if (sal.length) setSelectedMonth(sal[0].month)
       setLoading(false)
     })
@@ -221,6 +222,7 @@ export default function Salary() {
   const officialRecord = payrollRecords.find(r => r.pay_period === selectedMonth)
   const current = records.find(r => r.month === selectedMonth)
   const monthBonus = bonusRecords.find(b => b.year_month === selectedMonth)
+  const monthQuarterBonus = quarterBonuses.find(qb => qb.payout_year_month === selectedMonth)
   const monthLeaves = leaveDeductions.filter(l => l.start_date?.startsWith(selectedMonth) && ['事假', '病假'].includes(l.type))
   const monthExpenses = expenses.filter(e => e.date?.startsWith(selectedMonth) && e.status === '已核准')
   const expenseTotal = monthExpenses.reduce((s, e) => s + (e.amount || 0), 0)
@@ -530,13 +532,14 @@ export default function Salary() {
 
 
 
-              {/* 🏆 門市業績獎金（已發布） */}
+              {/* 🏆 營運獎金（逐月累計·預覽，季末才實際發放） */}
               {monthBonus && (
                 <div className="card" style={{ borderColor: 'rgba(245,158,11,0.3)' }}>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--orange)', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
-                    🏆 門市業績獎金
-                    <span style={{ fontSize: 10, padding: '2px 6px', borderRadius: 4, background: 'rgba(245,158,11,0.15)', color: 'var(--orange)' }}>已發布</span>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--orange)', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    🏆 營運獎金（本月累計）
+                    <span style={{ fontSize: 10, padding: '2px 6px', borderRadius: 4, background: 'rgba(148,163,184,0.18)', color: 'var(--t2)' }}>預覽·季末發放</span>
                   </div>
+                  <div style={{ fontSize: 11, color: 'var(--t3)', marginBottom: 10 }}>此為當月累計金額,實際併入該季發放月薪資袋。</div>
                   {[
                     { label: '管理獎金', value: monthBonus.mgmt_bonus, sign: '+' },
                     { label: '業績獎金', value: monthBonus.target_bonus, sign: '+' },
@@ -561,10 +564,40 @@ export default function Salary() {
                     </div>
                   )}
                   <div style={{ marginTop: 10, paddingTop: 12, borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontSize: 13, fontWeight: 700 }}>獎金應發</span>
+                    <span style={{ fontSize: 13, fontWeight: 700 }}>本月累計</span>
                     <span style={{ fontSize: 18, fontWeight: 800, color: 'var(--orange)' }}>{money(monthBonus.net_bonus)}</span>
                   </div>
                   {monthBonus.notes && <div style={{ fontSize: 11, color: 'var(--t3)', marginTop: 8 }}>{monthBonus.notes}</div>}
+                </div>
+              )}
+
+              {/* 🏆 季營運獎金（已發放，掛在發放月） */}
+              {monthQuarterBonus && (
+                <div className="card" style={{ borderColor: 'rgba(245,158,11,0.5)', background: 'rgba(245,158,11,0.05)' }}>
+                  <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--orange)', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    🏆 {monthQuarterBonus.year} {monthQuarterBonus.quarter} 營運獎金
+                    <span style={{ fontSize: 10, padding: '2px 6px', borderRadius: 4, background: 'rgba(245,158,11,0.2)', color: 'var(--orange)' }}>已發放</span>
+                  </div>
+                  <div style={{ fontSize: 11, color: 'var(--t3)', marginBottom: 10 }}>
+                    統計月份：{(monthQuarterBonus.months || []).join('、')} 月（{monthQuarterBonus.months_count} 個月累計）
+                  </div>
+                  {[
+                    { label: '管理獎金（季累計）', value: monthQuarterBonus.total_mgmt, sign: '+' },
+                    { label: '業績獎金（季累計）', value: monthQuarterBonus.total_target, sign: '+' },
+                    { label: '記功獎金（季累計）', value: monthQuarterBonus.total_merit, sign: '+' },
+                    { label: '扣款（季累計）', value: monthQuarterBonus.total_deduct, sign: '', neg: true },
+                  ].filter(r => num(r.value) !== 0).map((r, i) => (
+                    <div key={i} className="info-row" style={{ paddingLeft: 12 }}>
+                      <span className="info-label">{r.label}</span>
+                      <span style={{ fontWeight: 600, color: num(r.value) < 0 ? 'var(--red)' : 'var(--green)' }}>
+                        {num(r.value) < 0 ? '' : '+'}{money(num(r.value))}
+                      </span>
+                    </div>
+                  ))}
+                  <div style={{ marginTop: 10, paddingTop: 12, borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: 14, fontWeight: 800 }}>本季實發</span>
+                    <span style={{ fontSize: 20, fontWeight: 800, color: 'var(--orange)' }}>{money(monthQuarterBonus.total_net)}</span>
+                  </div>
                 </div>
               )}
 

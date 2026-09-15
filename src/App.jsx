@@ -1,13 +1,10 @@
 import { useEffect } from 'react'
 import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from './contexts/AuthContext'
-import { ClipboardList, Users, Package, DollarSign } from 'lucide-react'
+import { ClipboardList } from 'lucide-react'
 
-// Hub pages (4 tabs)
+// Hub pages
 import HRHub from './pages/HRHub'
-import CRMHub from './pages/CRMHub'
-import WMSHub from './pages/WMSHub'
-import SalesHub from './pages/SalesHub'
 
 // HR pages
 import ClockPage from './pages/Clock'
@@ -58,26 +55,6 @@ import WorkOrders from './pages/WorkOrders'
 import RepairOrders from './pages/RepairOrders'
 import Preorders from './pages/Preorders'
 
-// CRM pages
-import NewCustomer from './pages/NewCustomer'
-import CustomerLookup from './pages/crm/CustomerLookup'
-import MemberLookup from './pages/crm/MemberLookup'
-import ServiceTickets from './pages/crm/ServiceTickets'
-
-// WMS pages
-import InventoryPage from './pages/Inventory'
-import WMSInbound from './pages/wms/Inbound'
-import WMSOutbound from './pages/wms/Outbound'
-import WMSStockCount from './pages/wms/StockCount'
-import WMSTransfers from './pages/wms/Transfers'
-
-// Sales pages
-import POSMobile from './pages/sales/POSMobile'
-import SalesOrders from './pages/sales/Orders'
-import SalesQuotations from './pages/sales/Quotations'
-import SalesReturns from './pages/sales/Returns'
-import SalesCommission from './pages/sales/Commission'
-
 // LINE rejects LIFF URIs with sub-paths, so the BOT links us with ?to=/route.
 // Other query params (e.g. ?to=/tasks&task=123&filter=all) must be forwarded
 // to the target route so BOT deep-links like 「更新任務」can pre-open the right task.
@@ -101,9 +78,6 @@ function TabBar() {
 
   const tabs = [
     { path: '/', icon: <ClipboardList size={20} />, label: 'HR', match: ['/', '/clock', '/salary', '/leave', '/leave-balance', '/tasks', '/expenses', '/off-request', '/business-trip', '/leave-of-absence', '/overtime', '/approve', '/task-confirmations', '/clock-correction', '/my-schedule', '/approval-status', '/expense-request', '/dashboard', '/todo', '/documents', '/benefits', '/training', '/performance', '/resignation', '/personnel-transfer', '/store-repair', '/repair-orders', '/renovation-quotes', '/collections'] },
-    { path: '/crm', icon: <Users size={20} />, label: 'CRM', match: ['/crm', '/customer'] },
-    { path: '/wms', icon: <Package size={20} />, label: 'WMS', match: ['/wms', '/inventory'] },
-    { path: '/sales', icon: <DollarSign size={20} />, label: 'Sales', match: ['/sales'] },
   ]
 
   const activeTab = tabs.find(t => t.match.some(m => pathname === m || (m !== '/' && pathname.startsWith(m))))
@@ -249,29 +223,6 @@ export default function App() {
         <Route path="/store-repair" element={<StoreRepair />} />
         <Route path="/work-orders" element={<WorkOrders />} />
         <Route path="/repair-orders" element={<RepairOrders />} />
-
-        {/* CRM Hub + pages */}
-        <Route path="/crm" element={<CRMHub />} />
-        <Route path="/customer/new" element={<NewCustomer />} />
-        <Route path="/crm/customer-lookup" element={<CustomerLookup />} />
-        <Route path="/crm/members" element={<MemberLookup />} />
-        <Route path="/crm/service" element={<ServiceTickets />} />
-
-        {/* WMS Hub + pages */}
-        <Route path="/wms" element={<WMSHub />} />
-        <Route path="/inventory" element={<InventoryPage />} />
-        <Route path="/wms/inbound" element={<WMSInbound />} />
-        <Route path="/wms/outbound" element={<WMSOutbound />} />
-        <Route path="/wms/stock-count" element={<WMSStockCount />} />
-        <Route path="/wms/transfers" element={<WMSTransfers />} />
-
-        {/* Sales Hub + pages */}
-        <Route path="/sales" element={<SalesHub />} />
-        <Route path="/sales/pos" element={<POSMobile />} />
-        <Route path="/sales/orders" element={<SalesOrders />} />
-        <Route path="/sales/quotations" element={<SalesQuotations />} />
-        <Route path="/sales/returns" element={<SalesReturns />} />
-        <Route path="/sales/commission" element={<SalesCommission />} />
 
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

@@ -6,7 +6,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../lib/supabase'
 
 // LIFF 打卡定位失敗時的備援:導去 web 系統員工打卡頁(GPS 用系統瀏覽器較穩)
-const SYSTEM_CLOCK_URL = 'https://mywinesweeapp.vercel.app/portal'
+const SYSTEM_CLOCK_URL = 'https://mywineswee.vercel.app/portal'
 const openSystemClock = () => {
   try { liff.openWindow({ url: SYSTEM_CLOCK_URL, external: true }) }
   catch { window.open(SYSTEM_CLOCK_URL, '_blank', 'noreferrer') }

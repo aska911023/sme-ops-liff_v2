@@ -32,6 +32,7 @@ export default function Salary() {
   const [payrollRecords, setPayrollRecords] = useState([])
   const [bonusRecords, setBonusRecords] = useState([])   // 門市營運獎金（逐月累計·預覽）
   const [quarterBonuses, setQuarterBonuses] = useState([]) // 季結算（已發放，掛在發放月）
+  const [competitions, setCompetitions] = useState([])     // 店長競賽（前三名，掛在發放月）
   const [bag, setBag] = useState(null)          // liff_get_my_salary_detail(引擎明細+微調+發布實領)
   const [bagLoading, setBagLoading] = useState(false)
   const [expandAdd, setExpandAdd] = useState(true)  // 加項預設展開
@@ -96,7 +97,7 @@ export default function Salary() {
       setLeaveDeductions((Array.isArray(l.data) ? l.data : []).filter(x => x.status === '已核准'))
       setExpenses(Array.isArray(e.data) ? e.data : [])
       if (p.data?.ok) setPayrollRecords(p.data.records || [])
-      if (b.data?.ok) { setBonusRecords(b.data.records || []); setQuarterBonuses(b.data.quarters || []) }
+      if (b.data?.ok) { setBonusRecords(b.data.records || []); setQuarterBonuses(b.data.quarters || []); setCompetitions(b.data.competitions || []) }
       if (sal.length) setSelectedMonth(sal[0].month)
       setLoading(false)
     })
@@ -223,6 +224,7 @@ export default function Salary() {
   const current = records.find(r => r.month === selectedMonth)
   const monthBonus = bonusRecords.find(b => b.year_month === selectedMonth)
   const monthQuarterBonus = quarterBonuses.find(qb => qb.payout_year_month === selectedMonth)
+  const monthCompetition = competitions.find(c => c.payout_year_month === selectedMonth)
   const monthLeaves = leaveDeductions.filter(l => l.start_date?.startsWith(selectedMonth) && ['事假', '病假'].includes(l.type))
   const monthExpenses = expenses.filter(e => e.date?.startsWith(selectedMonth) && e.status === '已核准')
   const expenseTotal = monthExpenses.reduce((s, e) => s + (e.amount || 0), 0)
@@ -597,6 +599,23 @@ export default function Salary() {
                   <div style={{ marginTop: 10, paddingTop: 12, borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <span style={{ fontSize: 14, fontWeight: 800 }}>本季實發</span>
                     <span style={{ fontSize: 20, fontWeight: 800, color: 'var(--orange)' }}>{money(monthQuarterBonus.total_net)}</span>
+                  </div>
+                </div>
+              )}
+
+              {/* 🏆 店長競賽獎金（前三名，掛在發放月） */}
+              {monthCompetition && (
+                <div className="card" style={{ borderColor: 'rgba(245,158,11,0.5)', background: 'rgba(245,158,11,0.05)' }}>
+                  <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--orange)', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    🏆 {monthCompetition.year} {monthCompetition.period} 店長競賽
+                    <span style={{ fontSize: 10, padding: '2px 6px', borderRadius: 4, background: 'rgba(245,158,11,0.2)', color: 'var(--orange)' }}>第 {monthCompetition.rank} 名</span>
+                  </div>
+                  <div style={{ fontSize: 11, color: 'var(--t3)', marginBottom: 10 }}>
+                    {monthCompetition.store_name}　業績成長率 {monthCompetition.growth == null ? '—' : (Number(monthCompetition.growth) * 100).toFixed(1) + '%'}
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: 14, fontWeight: 800 }}>競賽獎金</span>
+                    <span style={{ fontSize: 20, fontWeight: 800, color: 'var(--orange)' }}>{money(monthCompetition.prize)}</span>
                   </div>
                 </div>
               )}

@@ -34,6 +34,7 @@ export default function Salary() {
   const [quarterBonuses, setQuarterBonuses] = useState([]) // 季結算（已發放，掛在發放月）
   const [competitions, setCompetitions] = useState([])     // 店長競賽（前三名，掛在發放月）
   const [personalSales, setPersonalSales] = useState([])   // 個人銷售酒款激勵（次月發放）
+  const [parttimeIncentives, setParttimeIncentives] = useState([]) // 計時全勤激勵（次月發放）
   const [bag, setBag] = useState(null)          // liff_get_my_salary_detail(引擎明細+微調+發布實領)
   const [bagLoading, setBagLoading] = useState(false)
   const [expandAdd, setExpandAdd] = useState(true)  // 加項預設展開
@@ -98,7 +99,7 @@ export default function Salary() {
       setLeaveDeductions((Array.isArray(l.data) ? l.data : []).filter(x => x.status === '已核准'))
       setExpenses(Array.isArray(e.data) ? e.data : [])
       if (p.data?.ok) setPayrollRecords(p.data.records || [])
-      if (b.data?.ok) { setBonusRecords(b.data.records || []); setQuarterBonuses(b.data.quarters || []); setCompetitions(b.data.competitions || []); setPersonalSales(b.data.personal_sales || []) }
+      if (b.data?.ok) { setBonusRecords(b.data.records || []); setQuarterBonuses(b.data.quarters || []); setCompetitions(b.data.competitions || []); setPersonalSales(b.data.personal_sales || []); setParttimeIncentives(b.data.parttime_incentives || []) }
       if (sal.length) setSelectedMonth(sal[0].month)
       setLoading(false)
     })
@@ -228,6 +229,7 @@ export default function Salary() {
   const monthCompetition = competitions.find(c => c.payout_year_month === selectedMonth)
   const monthPersonalSales = personalSales.filter(p => p.payout_year_month === selectedMonth)
   const monthPersonalSalesTotal = monthPersonalSales.reduce((s, p) => s + num(p.bonus), 0)
+  const monthParttime = parttimeIncentives.find(p => p.payout_year_month === selectedMonth)
   const monthLeaves = leaveDeductions.filter(l => l.start_date?.startsWith(selectedMonth) && ['事假', '病假'].includes(l.type))
   const monthExpenses = expenses.filter(e => e.date?.startsWith(selectedMonth) && e.status === '已核准')
   const expenseTotal = monthExpenses.reduce((s, e) => s + (e.amount || 0), 0)
@@ -639,6 +641,24 @@ export default function Salary() {
                   <div style={{ marginTop: 10, paddingTop: 12, borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <span style={{ fontSize: 13, fontWeight: 700 }}>激勵合計</span>
                     <span style={{ fontSize: 18, fontWeight: 800, color: 'var(--orange)' }}>{money(monthPersonalSalesTotal)}</span>
+                  </div>
+                </div>
+              )}
+
+              {/* ⏱️ 計時全勤激勵（次月發放） */}
+              {monthParttime && (
+                <div className="card" style={{ borderColor: 'rgba(245,158,11,0.3)' }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--orange)', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    ⏱️ 計時全勤激勵
+                    <span style={{ fontSize: 10, padding: '2px 6px', borderRadius: 4, background: 'rgba(245,158,11,0.15)', color: 'var(--orange)' }}>{monthParttime.year_month} 全勤</span>
+                  </div>
+                  <div className="info-row" style={{ paddingLeft: 12 }}>
+                    <span className="info-label">核薪工時 {num(monthParttime.paid_hours)}h × 時薪+{num(monthParttime.rate_add)}</span>
+                    <span style={{ fontWeight: 600, color: 'var(--green)' }}>+{money(monthParttime.bonus)}</span>
+                  </div>
+                  <div style={{ marginTop: 10, paddingTop: 12, borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: 13, fontWeight: 700 }}>全勤激勵</span>
+                    <span style={{ fontSize: 18, fontWeight: 800, color: 'var(--orange)' }}>{money(monthParttime.bonus)}</span>
                   </div>
                 </div>
               )}

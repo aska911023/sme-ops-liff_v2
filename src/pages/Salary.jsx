@@ -227,15 +227,14 @@ export default function Salary() {
   const monthBonus = bonusRecords.find(b => b.year_month === selectedMonth)
   const monthQuarterBonus = quarterBonuses.find(qb => qb.payout_year_month === selectedMonth)
   const monthCompetition = competitions.find(c => c.payout_year_month === selectedMonth)
+  const num = v => Number(v || 0)
+  const money = v => `NT$ ${num(v).toLocaleString()}`
   const monthPersonalSales = personalSales.filter(p => p.payout_year_month === selectedMonth)
   const monthPersonalSalesTotal = monthPersonalSales.reduce((s, p) => s + num(p.bonus), 0)
   const monthParttime = parttimeIncentives.find(p => p.payout_year_month === selectedMonth)
   const monthLeaves = leaveDeductions.filter(l => l.start_date?.startsWith(selectedMonth) && ['事假', '病假'].includes(l.type))
   const monthExpenses = expenses.filter(e => e.date?.startsWith(selectedMonth) && e.status === '已核准')
   const expenseTotal = monthExpenses.reduce((s, e) => s + (e.amount || 0), 0)
-
-  const num = v => Number(v || 0)
-  const money = v => `NT$ ${num(v).toLocaleString()}`
 
   // ── 薪資袋:加項/減項(順序 津貼→加班費→其他;顏色對齊 web);實領以發布版為準,殘差吸收 ──
   //   引擎現算對得回發布版 → 用引擎最細明細;對不回(舊月出勤/排班/員工資料事後被改,引擎算不回)

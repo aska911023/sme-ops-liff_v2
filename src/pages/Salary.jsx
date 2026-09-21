@@ -541,10 +541,10 @@ export default function Salary() {
 
               {/* 🏆 營運獎金（逐月累計·預覽，季末才實際發放） */}
               {monthBonus && (
-                <div className="card" style={{ borderColor: 'rgba(245,158,11,0.3)' }}>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--orange)', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
-                    🏆 營運獎金（本月累計）
-                    <span style={{ fontSize: 10, padding: '2px 6px', borderRadius: 4, background: 'rgba(148,163,184,0.18)', color: 'var(--t2)' }}>預覽·季末發放</span>
+                <div className="card bonus-card">
+                  <div className="bonus-h" style={{ fontSize: 14, fontWeight: 700, marginBottom: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    🍷 營運獎金（本月累計）
+                    <span className="bonus-tag mute">預覽·季末發放</span>
                   </div>
                   <div style={{ fontSize: 11, color: 'var(--t3)', marginBottom: 10 }}>此為當月累計金額,實際併入該季發放月薪資袋。</div>
                   {[
@@ -572,7 +572,7 @@ export default function Salary() {
                   )}
                   <div style={{ marginTop: 10, paddingTop: 12, borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <span style={{ fontSize: 13, fontWeight: 700 }}>本月累計</span>
-                    <span style={{ fontSize: 18, fontWeight: 800, color: 'var(--orange)' }}>{money(monthBonus.net_bonus)}</span>
+                    <span className="bonus-v" style={{ fontSize: 18, fontWeight: 800 }}>{money(monthBonus.net_bonus)}</span>
                   </div>
                   {monthBonus.notes && <div style={{ fontSize: 11, color: 'var(--t3)', marginTop: 8 }}>{monthBonus.notes}</div>}
                 </div>
@@ -580,10 +580,10 @@ export default function Salary() {
 
               {/* 🏆 季營運獎金（已發放，掛在發放月） */}
               {monthQuarterBonus && (
-                <div className="card" style={{ borderColor: 'rgba(245,158,11,0.5)', background: 'rgba(245,158,11,0.05)' }}>
-                  <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--orange)', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <div className="card bonus-card hl">
+                  <div className="bonus-h" style={{ fontSize: 15, fontWeight: 800, marginBottom: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
                     🏆 {monthQuarterBonus.year} {monthQuarterBonus.quarter} 營運獎金
-                    <span style={{ fontSize: 10, padding: '2px 6px', borderRadius: 4, background: 'rgba(245,158,11,0.2)', color: 'var(--orange)' }}>已發放</span>
+                    <span className="bonus-tag gold">已發放</span>
                   </div>
                   <div style={{ fontSize: 11, color: 'var(--t3)', marginBottom: 10 }}>
                     統計月份：{(monthQuarterBonus.months || []).join('、')} 月（{monthQuarterBonus.months_count} 個月累計）
@@ -603,34 +603,34 @@ export default function Salary() {
                   ))}
                   <div style={{ marginTop: 10, paddingTop: 12, borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <span style={{ fontSize: 14, fontWeight: 800 }}>本季實發</span>
-                    <span style={{ fontSize: 20, fontWeight: 800, color: 'var(--orange)' }}>{money(monthQuarterBonus.total_net)}</span>
+                    <span className="bonus-v" style={{ fontSize: 22, fontWeight: 800 }}>{money(monthQuarterBonus.total_net)}</span>
                   </div>
                 </div>
               )}
 
               {/* 🏆 店長競賽獎金（前三名，掛在發放月） */}
               {monthCompetition && (
-                <div className="card" style={{ borderColor: 'rgba(245,158,11,0.5)', background: 'rgba(245,158,11,0.05)' }}>
-                  <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--orange)', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
-                    🏆 {monthCompetition.year} {monthCompetition.period} 店長競賽
-                    <span style={{ fontSize: 10, padding: '2px 6px', borderRadius: 4, background: 'rgba(245,158,11,0.2)', color: 'var(--orange)' }}>第 {monthCompetition.rank} 名</span>
+                <div className="card bonus-card hl">
+                  <div className="bonus-h" style={{ fontSize: 15, fontWeight: 800, marginBottom: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    🏅 {monthCompetition.year} {monthCompetition.period} 店長競賽
+                    <span className="bonus-tag wine">第 {monthCompetition.rank} 名</span>
                   </div>
                   <div style={{ fontSize: 11, color: 'var(--t3)', marginBottom: 10 }}>
                     {monthCompetition.store_name}　業績成長率 {monthCompetition.growth == null ? '—' : (Number(monthCompetition.growth) * 100).toFixed(1) + '%'}
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <span style={{ fontSize: 14, fontWeight: 800 }}>競賽獎金</span>
-                    <span style={{ fontSize: 20, fontWeight: 800, color: 'var(--orange)' }}>{money(monthCompetition.prize)}</span>
+                    <span className="bonus-v" style={{ fontSize: 22, fontWeight: 800 }}>{money(monthCompetition.prize)}</span>
                   </div>
                 </div>
               )}
 
               {/* 🍷 個人銷售酒款激勵（次月發放） */}
               {monthPersonalSales.length > 0 && (
-                <div className="card" style={{ borderColor: 'rgba(245,158,11,0.3)' }}>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--orange)', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
-                    🍷 個人銷售酒款激勵
-                    <span style={{ fontSize: 10, padding: '2px 6px', borderRadius: 4, background: 'rgba(245,158,11,0.15)', color: 'var(--orange)' }}>{monthPersonalSales.length} 筆</span>
+                <div className="card bonus-card">
+                  <div className="bonus-h" style={{ fontSize: 14, fontWeight: 700, marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    🍇 個人銷售酒款激勵
+                    <span className="bonus-tag plum">{monthPersonalSales.length} 筆</span>
                   </div>
                   {monthPersonalSales.map((p, i) => (
                     <div key={i} className="info-row" style={{ paddingLeft: 12 }}>
@@ -640,17 +640,17 @@ export default function Salary() {
                   ))}
                   <div style={{ marginTop: 10, paddingTop: 12, borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <span style={{ fontSize: 13, fontWeight: 700 }}>激勵合計</span>
-                    <span style={{ fontSize: 18, fontWeight: 800, color: 'var(--orange)' }}>{money(monthPersonalSalesTotal)}</span>
+                    <span className="bonus-v" style={{ fontSize: 18, fontWeight: 800 }}>{money(monthPersonalSalesTotal)}</span>
                   </div>
                 </div>
               )}
 
               {/* ⏱️ 計時全勤激勵（次月發放） */}
               {monthParttime && (
-                <div className="card" style={{ borderColor: 'rgba(245,158,11,0.3)' }}>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--orange)', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <div className="card bonus-card">
+                  <div className="bonus-h" style={{ fontSize: 14, fontWeight: 700, marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
                     ⏱️ 計時全勤激勵
-                    <span style={{ fontSize: 10, padding: '2px 6px', borderRadius: 4, background: 'rgba(245,158,11,0.15)', color: 'var(--orange)' }}>{monthParttime.year_month} 全勤</span>
+                    <span className="bonus-tag plum">{monthParttime.year_month} 全勤</span>
                   </div>
                   <div className="info-row" style={{ paddingLeft: 12 }}>
                     <span className="info-label">核薪工時 {num(monthParttime.paid_hours)}h × 時薪+{num(monthParttime.rate_add)}</span>
@@ -658,7 +658,7 @@ export default function Salary() {
                   </div>
                   <div style={{ marginTop: 10, paddingTop: 12, borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <span style={{ fontSize: 13, fontWeight: 700 }}>全勤激勵</span>
-                    <span style={{ fontSize: 18, fontWeight: 800, color: 'var(--orange)' }}>{money(monthParttime.bonus)}</span>
+                    <span className="bonus-v" style={{ fontSize: 18, fontWeight: 800 }}>{money(monthParttime.bonus)}</span>
                   </div>
                 </div>
               )}
